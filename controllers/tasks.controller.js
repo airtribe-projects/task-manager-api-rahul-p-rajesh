@@ -5,10 +5,18 @@ const taskFilePath = path.join(__dirname, "../task.json");
 
 const getAllTasks = async (req, res) => {
   try {
+    const queryParams = req.query;
+
     const fileData = await fs.readFileSync(taskFilePath);
     const data = JSON.parse(fileData);
+    let tasks = data.tasks;
 
-    return res.status(200).send(data.tasks);
+    if ("completed" in queryParams) {
+      const completedValue = queryParams.completed === "true";
+      tasks = tasks.filter((task) => task.completed === completedValue);
+    }
+
+    return res.status(200).send(tasks);
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
@@ -27,6 +35,26 @@ const getTaskById = async (req, res) => {
     const tasks = JSON.parse(fileData).tasks ?? [];
 
     const task = tasks.find((task) => task.id === id);
+
+    return task ? res.status(200).send(task) : res.status(404).send();
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send(error);
+  }
+};
+
+const getTaskByLevel = async (req, res) => {
+  try {
+    const level = req.params.level;
+
+    if (!level) {
+      return res.status(400);
+    }
+
+    const fileData = await fs.readFileSync(taskFilePath);
+    const tasks = JSON.parse(fileData).tasks ?? [];
+
+    const task = tasks.find((task) => task.level === level);
 
     return task ? res.status(200).send(task) : res.status(404).send();
   } catch (error) {
@@ -152,4 +180,5 @@ module.exports = {
   addTask,
   updateTask,
   deleteTask,
+  getTaskByLevel,
 };
